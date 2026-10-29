@@ -52,6 +52,26 @@ def centang(d, peta):
                 break
 
 
+def hapus_daftar_isi(d):
+    """Buang blok daftar isi lama supaya skrip ini aman dijalankan berulang.
+
+    Blok itu adalah semua paragraf antara akhir sampul (paragraf dengan page
+    break) dan judul Bab 1.
+    """
+    paras = list(d.paragraphs)
+    # Baris daftar isi juga diawali "1. Pendahuluan", jadi judul asli dikenali
+    # dari gayanya, bukan dari teksnya.
+    bab1 = next(i for i, p in enumerate(paras)
+                if p.style.name == "Heading 1"
+                and p.text.strip().startswith("1. Pendahuluan"))
+    # Halaman sampul berakhir pada page break pertama; sisanya sampai Bab 1
+    # adalah daftar isi dari putaran sebelumnya.
+    akhir_sampul = min(i for i, p in enumerate(paras[:bab1])
+                       if 'w:type="page"' in p._p.xml)
+    for p in paras[akhir_sampul + 1:bab1]:
+        p._p.getparent().remove(p._p)
+
+
 def sisip_kerangka(d):
     """Tambah halaman daftar isi (masih kosong) sebelum Bab 1."""
     anchor = next(p for p in d.paragraphs if p.text.strip().startswith("1. Pendahuluan"))
@@ -125,8 +145,8 @@ def main():
         "Daftar isi sudah diperbarui": True,
         "Berkas disimpan sebagai PDF": True,
     })
-    if not any(PENANDA in p.text for p in d.paragraphs):
-        sisip_kerangka(d)
+    hapus_daftar_isi(d)
+    sisip_kerangka(d)
     d.save(DOK)
 
     # Tahap 1: PDF sementara supaya nomor halaman sudah final.
