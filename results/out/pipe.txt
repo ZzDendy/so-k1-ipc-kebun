@@ -1,0 +1,7 @@
+$ python3 pipe_demo.py --n 20
+pipe: diterima=60/60 rusak=0 read_multipesan=1
+  1 read berisi lebih dari satu rekaman: pipe tidak menjaga batas pesan
+
+$ python3 pipe_demo.py --n 20 --tanpa-delimiter
+pipe: diterima=58/60 rusak=1 read_multipesan=1
+  1 read berisi lebih dari satu rekaman: pipe tidak menjaga batas pesan

@@ -1,0 +1,4 @@
+$ .venv/bin/python mqtt_demo.py --n 20 --logger 2
+  setiap logger menerima seluruh aliran: itu fan-out, bukan pembagian kerja.
+mqtt logger-1: diterima=60 unik=60/60 duplikat=0
+mqtt logger-2: diterima=60 unik=60/60 duplikat=0

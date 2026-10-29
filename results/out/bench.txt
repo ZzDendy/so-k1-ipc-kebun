@@ -1,0 +1,8 @@
+$ .venv/bin/python bench.py --trials 5
+Median dari 5 percobaan, 3 sensor x 20 pembacaan.
+
+| Mekanisme | Diterima | Hilang | Duplikat | Latensi rata (ms) | p95 (ms) | Maks (ms) |
+|---|---|---|---|---|---|---|
+| pipe | 60/60 | 0 | 0 | 0.069 | 0.310 | 0.558 |
+| mqueue | 60/60 | 0 | 0 | 0.065 | 0.257 | 0.432 |
+| mqtt | 60/60 | 0 | 0 | 0.498 | 2.029 | 2.334 |

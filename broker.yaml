@@ -1,0 +1,13 @@
+listeners:
+  default:
+    type: tcp
+    bind: 127.0.0.1:1883
+auth:
+  allow-anonymous: true
+plugins:
+  amqtt.plugins.authentication.AnonymousAuthPlugin:
+    allow_anonymous: true
+  amqtt.plugins.sys.broker.BrokerSysPlugin:
+    sys_interval: 0
+topic-check:
+  enabled: false

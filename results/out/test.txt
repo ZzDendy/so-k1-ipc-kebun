@@ -1,0 +1,2 @@
+$ python3 test_basic.py
+ok: semua cek lulus

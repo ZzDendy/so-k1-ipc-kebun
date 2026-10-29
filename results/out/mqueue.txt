@@ -1,0 +1,7 @@
+$ python3 mqueue_demo.py --n 20
+mqueue: diterima=60/60 tanpa pemotongan byte
+prioritas 20 pertama: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+$ python3 mqueue_demo.py --n 20 --darurat-setiap 5
+mqueue: diterima=60/60 tanpa pemotongan byte
+prioritas 20 pertama: [9, 9, 9, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 1, 1]

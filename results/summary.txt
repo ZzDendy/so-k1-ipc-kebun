@@ -1,0 +1,23 @@
+## pipe
+pipe: diterima=60/60 rusak=0 read_multipesan=0
+pipe: diterima=46/60 rusak=7 read_multipesan=7
+  7 read berisi lebih dari satu rekaman: pipe tidak menjaga batas pesan
+
+## message queue
+mqueue: diterima=60/60 tanpa pemotongan byte
+prioritas 20 pertama: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+mqueue: diterima=60/60 tanpa pemotongan byte
+prioritas 20 pertama: [9, 9, 9, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 1, 1]
+
+## mqtt (butuh broker di 127.0.0.1:1883)
+mqtt logger-1: diterima=60 unik=60/60 duplikat=0
+  setiap logger menerima seluruh aliran: itu fan-out, bukan pembagian kerja.
+mqtt logger-1: diterima=60 unik=60/60 duplikat=0
+mqtt logger-2: diterima=60 unik=60/60 duplikat=0
+
+## perbandingan
+| Mekanisme | Diterima | Hilang | Rusak | Latensi rata (ms) | p95 (ms) | Maks (ms) |
+|---|---|---|---|---|---|---|
+| pipe | 60/60 | 0 | 0 | 0.070 | 0.499 | 0.703 |
+| mqueue | 60/60 | 0 | 0 | 0.068 | 0.190 | 0.342 |
+| mqtt | 60/60 | 0 | 0 | 0.498 | 2.554 | 3.081 |

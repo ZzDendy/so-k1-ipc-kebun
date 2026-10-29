@@ -1,0 +1,7 @@
+Median dari 5 percobaan, 3 sensor x 20 pembacaan.
+
+| Mekanisme | Diterima | Hilang | Rusak | Latensi rata (ms) | p95 (ms) | Maks (ms) |
+|---|---|---|---|---|---|---|
+| pipe | 60/60 | 0 | 0 | 0.068 | 0.275 | 0.599 |
+| mqueue | 60/60 | 0 | 0 | 0.066 | 0.217 | 0.393 |
+| mqtt | 60/60 | 0 | 0 | 0.516 | 1.753 | 2.441 |
