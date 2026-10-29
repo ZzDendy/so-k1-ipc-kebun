@@ -21,10 +21,10 @@ Pendukung: `common.py` (format pesan), `bench.py` (pengukuran),
 ## Menjalankan
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install paho-mqtt amqtt python-docx matplotlib
+# venv bersama ada di folder induk (~/Documents/Tugas/SO/.venv)
+../.venv/bin/python -m pip install paho-mqtt amqtt python-docx matplotlib
 
-.venv/bin/amqtt -c broker.yaml &     # broker MQTT lokal di port 1883
+../.venv/bin/amqtt -c broker.yaml &   # broker MQTT lokal di port 1883
 ./run_all.sh                          # semua percobaan → results/
 ```
 
@@ -33,24 +33,24 @@ Hentikan broker setelah selesai dengan `pkill -f "amqtt -c broker.yaml"`.
 
 ## Hasil
 
-Median 5 percobaan, 3 sensor × 20 pembacaan, satu host:
+Median 10 percobaan, 3 sensor × 20 pembacaan, satu host:
 
 | Mekanisme | Diterima | Hilang | Latensi rata | p95 |
 |---|---|---|---|---|
-| pipe | 60/60 | 0 | 0.07 ms | 0.28 ms |
-| message queue | 60/60 | 0 | 0.07 ms | 0.22 ms |
-| MQTT (QoS 1) | 60/60 | 0 | 0.52 ms | 1.75 ms |
+| pipe | 60/60 | 0 | 0.06 ms | 0.27 ms |
+| message queue | 60/60 | 0 | 0.07 ms | 0.25 ms |
+| MQTT (QoS 1) | 60/60 | 0 | 0.58 ms | 2.10 ms |
 
 Tiga temuan yang masuk laporan:
 
 1. **Pipe tidak menjaga batas pesan.** Tanpa penanda newline, rekaman menempel di
-   satu `read()`. Dari 10 percobaan, 5 kehilangan data (run terburuk 50/60,
-   5 rekaman rusak). Dengan newline, keutuhan terjaga tetapi penerima tetap wajib
-   menyimpan sisa byte.
+   satu `read()`. Dari 10 percobaan, 7 kehilangan data (run
+   terburuk 52/60 diterima). Dengan newline, keutuhan terjaga
+   tetapi penerima tetap wajib menyimpan sisa byte.
 2. **Message queue menjaga batas dan prioritas.** `mq_receive` selalu
    mengembalikan tepat satu pesan; pesan prioritas 9 keluar lebih dulu meski
    dikirim terakhir; pesan >`mq_msgsize` ditolak `EMSGSIZE`, tidak dipotong.
-3. **MQTT ~8x lebih lambat tetapi memberi fan-out.** Dua logger menerima aliran
+3. **MQTT ~10x lebih lambat tetapi memberi fan-out.** Dua logger menerima aliran
    identik tanpa saling berebut — tidak bisa dilakukan satu antrean pipe/mqueue.
 
 ## Batas yang diketahui

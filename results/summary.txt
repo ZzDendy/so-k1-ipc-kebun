@@ -1,7 +1,7 @@
 ## pipe
+pipe: diterima=60/60 rusak=0 read_multipesan=1
+  1 read berisi lebih dari satu rekaman: pipe tidak menjaga batas pesan
 pipe: diterima=60/60 rusak=0 read_multipesan=0
-pipe: diterima=46/60 rusak=7 read_multipesan=7
-  7 read berisi lebih dari satu rekaman: pipe tidak menjaga batas pesan
 
 ## message queue
 mqueue: diterima=60/60 tanpa pemotongan byte
@@ -16,8 +16,10 @@ mqtt logger-1: diterima=60 unik=60/60 duplikat=0
 mqtt logger-2: diterima=60 unik=60/60 duplikat=0
 
 ## perbandingan
-| Mekanisme | Diterima | Hilang | Rusak | Latensi rata (ms) | p95 (ms) | Maks (ms) |
+Median dari 5 percobaan, 3 sensor x 20 pembacaan.
+
+| Mekanisme | Diterima | Hilang | Duplikat | Latensi rata (ms) | p95 (ms) | Maks (ms) |
 |---|---|---|---|---|---|---|
-| pipe | 60/60 | 0 | 0 | 0.070 | 0.499 | 0.703 |
-| mqueue | 60/60 | 0 | 0 | 0.068 | 0.190 | 0.342 |
-| mqtt | 60/60 | 0 | 0 | 0.498 | 2.554 | 3.081 |
+| pipe | 60/60 | 0 | 0 | 0.062 | 0.258 | 0.491 |
+| mqueue | 60/60 | 0 | 0 | 0.064 | 0.280 | 0.463 |
+| mqtt | 60/60 | 0 | 0 | 0.611 | 2.016 | 2.047 |

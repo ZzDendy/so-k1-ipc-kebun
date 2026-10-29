@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -16,7 +17,7 @@ import common
 PERCOBAAN = [
     ("pipe", [sys.executable, "pipe_demo.py"]),
     ("mqueue", [sys.executable, "mqueue_demo.py"]),
-    ("mqtt", [".venv/bin/python", "mqtt_demo.py"]),
+    ("mqtt", ["../.venv/bin/python", "mqtt_demo.py"]),
 ]
 LOG = {"pipe": common.LOG_PIPE, "mqueue": common.LOG_MQ, "mqtt": common.LOG_MQTT}
 
@@ -41,6 +42,32 @@ def baca(path, target):
         "p95": lat[int(len(lat) * 0.95)] * 1000,
         "maks": lat[-1] * 1000,
     }
+
+
+def uji_pipe(a):
+    """Keutuhan rekaman pada pipe, dengan dan tanpa penanda newline."""
+    target = a.n * a.sensors
+    hasil = {}
+    for mode, opsi in (("delimiter", []), ("tanpa", ["--tanpa-delimiter"])):
+        utuh = hilang = 0
+        terburuk = target
+        for _ in range(a.trials):
+            if os.path.exists(common.LOG_PIPE):
+                os.remove(common.LOG_PIPE)
+            out = subprocess.run([sys.executable, "pipe_demo.py", "--n", str(a.n),
+                                  "--sensors", str(a.sensors)] + opsi,
+                                 capture_output=True, text=True)
+            m = re.search(r"diterima=(\d+)/(\d+)", out.stdout)
+            if not m:
+                continue
+            diterima = int(m.group(1))
+            if diterima == target:
+                utuh += 1
+            else:
+                hilang += 1
+            terburuk = min(terburuk, diterima)
+        hasil[mode] = {"utuh": utuh, "hilang": hilang, "terburuk": terburuk}
+    return hasil
 
 
 def main():
@@ -72,10 +99,12 @@ def main():
             }
             hasil[nama]["unik"] = max(x["unik"] for x in jalankan)
 
+    pipa = uji_pipe(a)
+
     print(f"Median dari {a.trials} percobaan, {a.sensors} sensor x {a.n} pembacaan.\n")
     with open("results/bench.json", "w", encoding="utf-8") as f:
-        json.dump({"trials": a.trials, "n": a.n, "sensors": a.sensors, "hasil": hasil},
-                  f, indent=2)
+        json.dump({"trials": a.trials, "n": a.n, "sensors": a.sensors,
+                   "hasil": hasil, "pipe": pipa}, f, indent=2)
     print("| Mekanisme | Diterima | Hilang | Duplikat | Latensi rata (ms) | p95 (ms) | Maks (ms) |")
     print("|---|---|---|---|---|---|---|")
     for nama, _ in PERCOBAAN:

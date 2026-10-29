@@ -11,7 +11,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
-TEMPLATE = "../Template Laporan Tugas Individu.docx"
+TEMPLATE = "../template/Template Laporan Tugas Individu.docx"
 OUT = "results/Laporan_K-1_IPC_Kebun.docx"
 MONO = "DejaVu Sans Mono"
 BODY = "Droid Sans"
@@ -21,7 +21,12 @@ NIM = "250660121068"
 KELAS = "IF-3C"
 KODE = "K-1"
 ANGGOTA = [
-    ("Dendy Zainal Mutaqien", NIM, "Pipeline IPC (pipe, message queue) dan penyusunan laporan"),
+    ("Dendy Zainal Mutaqien", NIM,
+     "Pipeline IPC (pipe, message queue, MQTT), pengukuran, dan penyusunan laporan"),
+    ("R.Sangga Buana", "250660121021",
+     "Menjalankan ulang ./run_all.sh di laptop sendiri dan mencocokkan angka Tabel 5.1"),
+    ("M.Azkal Azkiya", "250660121107",
+     "Memeriksa ejaan laporan dan kesesuaian format Daftar Pustaka"),
 ]
 
 
@@ -59,8 +64,10 @@ def shd(el, warna):
     pr.append(s)
 
 
-def h1(d, teks):
+def h1(d, teks, halaman_baru=False):
     p = d.add_paragraph(teks, style="Heading 1")
+    if halaman_baru:
+        p.paragraph_format.page_break_before = True
     return p
 
 
@@ -172,6 +179,7 @@ def tabel(d, header, baris, lebar=None, ukuran=9):
         c = hdr.cells[i]
         c.text = ""
         p = c.paragraphs[0]
+        p.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
         p.paragraph_format.space_before = Pt(2)
         p.paragraph_format.space_after = Pt(2)
         r = p.add_run(teks)
@@ -188,6 +196,7 @@ def tabel(d, header, baris, lebar=None, ukuran=9):
             c = row.cells[i]
             c.text = ""
             p = c.paragraphs[0]
+            p.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.space_before = Pt(2)
             p.paragraph_format.space_after = Pt(2)
             r = p.add_run(str(teks))
@@ -268,7 +277,8 @@ def sampul(d):
         ("Kelas / tema", f"{KELAS} — IoT dan Smart Farming"),
         ("Nama", NAMA),
         ("NIM", NIM),
-        ("Anggota kelompok", "Dendy Zainal Mutaqien (rincian di Lampiran D)"),
+        ("Anggota kelompok", "3 orang — Dendy Zainal Mutaqien, R.Sangga Buana, "
+                                 "M.Azkal Azkiya (rincian di Lampiran D)"),
         ("Nama host", "INFINIX-ElementaryOS"),
         ("Minggu / tanggal kumpul", "Minggu ke-4 / 29 Oktober 2026"),
         ("Kepingan puzzle", "Kepingan #4 → Level 2 Puzzle UTS"),
@@ -375,7 +385,7 @@ def dasar_teori(d):
 def lingkungan(d):
     h1(d, "3. Lingkungan Praktik")
     tabel(d, ["Komponen", "Keterangan"], [
-        ("Laptop (host)", "elementary OS 8, AMD Ryzen 7 7735HS, RAM 14 GiB, kernel "
+        ("Laptop (host)", "elementary OS 8, AMD Ryzen 7 7735HS, RAM 16 GiB, kernel "
                           "7.0.0-34-generic"),
         ("Hypervisor", "Tidak dipakai — seluruh percobaan dijalankan langsung pada host"),
         ("VM / host", "INFINIX-ElementaryOS, 16 vCPU, tanpa virtualisasi"),
@@ -506,8 +516,8 @@ def hasil(d):
         ("3", "MQTT (QoS 1)", f"{int(b['mqtt']['diterima'])}/{target}", "0", "0",
          f"{b['mqtt']['rata']:.3f}", f"{b['mqtt']['p95']:.3f}", f"{b['mqtt']['maks']:.3f}"),
     ], lebar=[0.9, 3.4, 2.0, 1.5, 1.8, 2.6, 1.7, 1.7], ukuran=8.5)
-    caption(d, "Tabel 5.1 Perbandingan ketiga mekanisme (median 5 percobaan, 3 sensor × 20 "
-               "pembacaan)")
+    caption(d, f"Tabel 5.1 Perbandingan ketiga mekanisme (median {baca_bench()['trials']} "
+               "percobaan, 3 sensor × 20 pembacaan)")
 
     gambar(d, "results/gambar-latensi.png", 14.0,
            "Gambar 5.1 Latensi kirim ke terima per mekanisme")
@@ -515,12 +525,16 @@ def hasil(d):
     par(d, "Pengujian berikutnya mematikan penanda newline pada pipe untuk memperlihatkan "
            "perilaku saat batas pesan tidak dijaga. Sepuluh kali percobaan dijalankan pada "
            "masing-masing mode, dan hasilnya dirangkum pada Tabel 5.2.")
+    pipa = baca_bench()["pipe"]
+    n_uji = baca_bench()["trials"]
     tabel(d, ["Mode pipe", "Percobaan utuh (60/60)", "Percobaan kehilangan rekaman",
-              "Rekaman rusak pada run terburuk"], [
-        ("dengan pemisah newline", "10 dari 10", "0", "0"),
-        ("tanpa pemisah", "5 dari 10", "5", "5 rekaman (50/60 diterima)"),
+              "Rekaman diterima pada run terburuk"], [
+        ("dengan pemisah newline", f"{pipa['delimiter']['utuh']} dari {n_uji}",
+         pipa['delimiter']['hilang'], f"{pipa['delimiter']['terburuk']}/60"),
+        ("tanpa pemisah", f"{pipa['tanpa']['utuh']} dari {n_uji}",
+         pipa['tanpa']['hilang'], f"{pipa['tanpa']['terburuk']}/60"),
     ], lebar=[5.0, 4.4, 3.6, 4.4])
-    caption(d, "Tabel 5.2 Keutuhan rekaman pada pipe, 10 percobaan per mode")
+    caption(d, f"Tabel 5.2 Keutuhan rekaman pada pipe, {n_uji} percobaan per mode")
 
     par(d, "Pada message queue, prioritas terbukti dihormati kernel. Ketika setiap pembacaan "
            "kelima dikirim dengan prioritas darurat, urutan penerimaan berubah menjadi:")
@@ -547,8 +561,9 @@ def hasil(d):
            "berasal dari mekanismenya.")
     par(d, "Poin (2) deskripsi tugas — hasil pengujian. Perbedaan paling mencolok bukan pada "
            "latensi, melainkan pada keutuhan data saat penanda rekaman dilepas. Pipe tanpa "
-           "pemisah kehilangan rekaman pada lima dari sepuluh percobaan, dengan kerusakan "
-           "terburuk mencapai lima rekaman dari enam puluh. Penyebabnya mudah dijelaskan: "
+           f"pemisah kehilangan rekaman pada {pipa['tanpa']['hilang']} dari {n_uji} "
+           f"percobaan, dengan kerusakan terburuk menyisakan hanya "
+           f"{pipa['tanpa']['terburuk']} rekaman dari 60. Penyebabnya mudah dijelaskan: "
            "os.read mengembalikan apa pun yang sedang tersedia di buffer, sehingga dua JSON "
            "dapat menempel menjadi satu potongan, sementara satu JSON juga dapat terbelah dua "
            "potongan. Pipe tidak salah; ia memang tidak pernah menjanjikan batas pesan. Yang "
@@ -557,9 +572,10 @@ def hasil(d):
            "menyisip di tengah. Message queue tidak menunjukkan masalah serupa karena kernel "
            "menyimpan panjang setiap pesan secara eksplisit, dan pesan yang melebihi mq_msgsize "
            "ditolak dengan EMSGSIZE, bukan dipotong.")
+    rasio = baca_bench()["hasil"]["mqtt"]["rata"] / baca_bench()["hasil"]["pipe"]["rata"]
     par(d, "Pada sisi waktu, message queue dan pipe praktis setara, keduanya di bawah 0,1 ms "
            "rata-rata, karena keduanya hanya menyalin data antar buffer kernel tanpa melewati "
-           "jaringan. MQTT lebih lambat sekitar delapan kali pada nilai rata-rata, dan selisih "
+           f"jaringan. MQTT lebih lambat sekitar {rasio:.0f} kali pada nilai rata-rata, dan selisih "
            "melebar pada persentil 95 karena antrean TCP di sisi broker kadang menahan pesan. "
            "Biaya itu bukan pemborosan tanpa imbalan: pada percobaan dua logger, keduanya "
            "menerima enam puluh dari enam puluh rekaman. Dengan pipe atau satu antrean message "
@@ -601,13 +617,18 @@ def hasil(d):
 
 def kesimpulan(d):
     h1(d, "6. Kesimpulan")
+    bench = baca_bench()
+    rasio = bench["hasil"]["mqtt"]["rata"] / bench["hasil"]["pipe"]["rata"]
+    n_uji = bench["trials"]
+    hilang = bench["pipe"]["tanpa"]["hilang"]
     par(d, "Tiga mekanisme message passing berhasil mengirim seluruh data sensor ke proses "
            "logger pada kasus kebun pintar, tetapi hanya dua di antaranya menjamin keutuhan "
            "rekaman tanpa bantuan program penerima. Pipe memperlakukan data sebagai aliran byte, "
            "sehingga tanpa penanda pemisah rekaman dapat menempel atau terbelah; pengujian "
-           "menunjukkan kehilangan data pada lima dari sepuluh percobaan. POSIX message queue "
+           f"menunjukkan kehilangan data pada {hilang} dari {n_uji} "
+           "percobaan. POSIX message queue "
            "menjaga batas pesan dan menghormati prioritas di tingkat kernel, dengan biaya waktu "
-           "yang setara pipe. MQTT menambah latensi sekitar delapan kali, tetapi memberi "
+           f"yang setara pipe. MQTT menambah latensi sekitar {rasio:.0f} kali, tetapi memberi "
            "fan-out ke beberapa penerima dan memutus ketergantungan antara pengirim dan "
            "penerima. Untuk kebutuhan kelas, message queue adalah pilihan utama jalur data, "
            "sedangkan MQTT dipakai ketika data harus dilihat di lebih dari satu tempat.")
@@ -619,7 +640,8 @@ def kepingan(d):
         ("Nomor kepingan", "#4"),
         ("Isi kepingan", "Kode program IPC (pipe, message queue, MQTT), diagram alur "
                          "komunikasi, tabel perbandingan latensi dan keutuhan data"),
-        ("Lokasi di portofolio", "[tautan Google Drive/GitHub kelompok]"),
+        ("Lokasi di portofolio",
+         "https://github.com/ZzDendy/so-k1-ipc-kebun"),
         ("Dipakai untuk", "Level 2 Puzzle UTS — menjadi dasar pembahasan sinkronisasi pada "
                           "kepingan #5 (penjadwalan) dan #6 (race condition), karena logger "
                           "yang sama dipakai ulang sebagai producer-consumer pada tugas "
@@ -665,7 +687,7 @@ def lampiran(d):
         kode(d, baca_berkas(nama), ukuran=7.5)
 
     h1(d, "Lampiran B. Pernyataan Penggunaan AI Generatif")
-    par(d, "☐  Saya tidak menggunakan AI generatif dalam tugas ini.")
+    par(d, "☐  Kami tidak menggunakan AI generatif dalam tugas ini.")
     par(d, "☒  Menggunakan AI generatif dengan rincian berikut:")
     tabel(d, ["Alat", "Tujuan penggunaan", "Bagian yang dibantu", "Cara memverifikasi"], [
         ("Claude (Anthropic)", "Menyusun kerangka program dan merapikan kalimat laporan",
@@ -704,21 +726,11 @@ def lampiran(d):
             "Ya — lembar kontribusi pada Lampiran D")],
           lebar=[5.2, 2.0, 8.0])
 
-    h1(d, "Lampiran D. Lembar Kontribusi Anggota")
-    par(d, "Lembar ini memenuhi syarat kerja sama dan pembagian peran (15% bobot penilaian). "
-           "Baris anggota lain ditambahkan sebelum dikumpulkan.")
+    h1(d, "Lampiran D. Lembar Kontribusi Anggota", halaman_baru=True)
+    par(d, "Lembar ini memenuhi syarat kerja sama dan pembagian peran (15% bobot penilaian) "
+           "pada lembar tugas K-1.")
     tabel(d, ["Nama", "NIM", "Peran dan bagian yang dikerjakan"],
-          [(n, i, p) for n, i, p in ANGGOTA] + [("", "", ""), ("", "", "")],
-          lebar=[4.4, 3.0, 7.8])
-
-    par(d, "")
-    par(d, "Pernyataan keaslian")
-    par(d, "Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan ini merupakan hasil "
-           "kerja kelompok kami sendiri, disusun berdasarkan praktik yang benar-benar dijalankan, "
-           "dan seluruh sumber yang dikutip telah dicantumkan pada daftar pustaka. Penggunaan "
-           "alat bantu AI generatif telah diungkapkan pada Lampiran B.")
-    tabel(d, ["Nama / NIM", "Tanda tangan dan tanggal"],
-          [(f"{NAMA} / {NIM}", ""), (" / ", ""), (" / ", "")], lebar=[7.0, 8.2])
+          [(n, i, p) for n, i, p in ANGGOTA], lebar=[4.4, 3.0, 7.8])
 
 
 def main():
@@ -736,6 +748,12 @@ def main():
     lampiran(d)
     nomor_halaman(d)
     os.makedirs("results", exist_ok=True)
+    d.save(OUT)
+
+    d.core_properties.title = "K-1 Implementasi Komunikasi Antarproses (IPC)"
+    d.core_properties.author = NAMA
+    d.core_properties.subject = "Sistem Operasi (USA-WP2260110), IF-3C"
+    d.core_properties.last_modified_by = NAMA
     d.save(OUT)
     print("tersimpan:", OUT)
 

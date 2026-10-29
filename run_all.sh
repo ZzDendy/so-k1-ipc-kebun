@@ -17,9 +17,9 @@ python3 test_basic.py
   python3 mqueue_demo.py --n 20 --darurat-setiap 5
   echo
   echo "## mqtt (butuh broker di 127.0.0.1:1883)"
-  .venv/bin/python mqtt_demo.py --n 20
-  .venv/bin/python mqtt_demo.py --n 20 --logger 2
+  ../.venv/bin/python mqtt_demo.py --n 20
+  ../.venv/bin/python mqtt_demo.py --n 20 --logger 2
   echo
   echo "## perbandingan"
-  .venv/bin/python bench.py
+  ../.venv/bin/python bench.py
 } 2>&1 | tee results/summary.txt
